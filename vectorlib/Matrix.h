@@ -17,6 +17,15 @@ public:
   TMatrix(const TVector<T>& vect);
   ~TMatrix();
 
+  bool operator==(const TMatrix<T>& m);
+  TMatrix<T>& operator=(const TMatrix<T>& m);
+  TVector<T>& operator[](const int indx);
+  TMatrix<T> operator+(const TMatrix<T>& m);
+  TMatrix<T> operator-(const TMatrix<T>& m);
+  TMatrix<T> operator*(const TMatrix<T>& m);
+  TMatrix<T> operator*(const T a);
+  TVector<T> operator*(const TVector<T>& v);
+
   T GetElem(const int row, const int column) const;
   int GetRowsCount() const;
   int GetColumnsCount() const;
@@ -24,16 +33,6 @@ public:
   void SetElem(const int row, const int column, T a);
   void SetMatrix(const int _columnsCount, const TVector<T>* _columns);
   void Transp();
-
-  bool operator==(const TMatrix<T>& m);
-  TMatrix<T>& operator=(const TMatrix<T>& m);
-  TVector<T>& operator[](const int indx);
-  TMatrix<T> operator+(const TMatrix<T>& m);
-  TMatrix<T> operator*(const TMatrix<T>& m);
-  TMatrix<T> operator*(const T a);
-  TVector<T> operator*(const TVector<T>& v);
-
-  TMatrix<T> operator-(const TMatrix<T>& m);
 
   friend ostream& operator<<(ostream& t, const TMatrix<T>& m)
   {
@@ -164,6 +163,119 @@ TMatrix<T>::TMatrix(const TVector<T>& vect)
   columns = new TVector<T>[1];
   columns[0] = vect;
 }
+template <class T>
+bool TMatrix<T>::operator==(const TMatrix<T>& m)
+{
+  if (columnsCount == m.GetColumnsCount() && rowsCount == m.GetRowsCount())
+  {
+    for (int i = 0; i < columnsCount; i++)
+    {
+      if (columns[i] != m.GetVector(i))
+        return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+template <class T>
+TMatrix<T>& TMatrix<T>::operator=(const TMatrix<T>& m)
+{
+  if (m.GetColumnsCount == 0 || m.GetRowsCount() == 0)
+    throw "Error: matrix=0-matrix";
+
+  columnsCount = m.GetColumnsCount();
+  rowsCount = m.GetRowsCount();
+  if (columns != 0)
+  {
+    delete[] columns;
+    columns = 0;
+  }
+  columns = new TVector<T>[columnsCount];
+
+  for (int i = 0; i < columnsCount; i++)
+    columns[i] = m.GetVector(i);
+
+  return *this;
+}
+
+template <class T>
+TVector<T>& TMatrix<T>::operator[](const int indx)
+{
+  if (indx < 0 || indx >= columnsCount)
+    throw "Error: run out of matrix range";
+  return columns[indx];
+}
+
+template <class T>
+TMatrix<T> TMatrix<T>::operator+(const TMatrix<T>& m)
+{
+  if (m.GetColumnsCount() != columnsCount || m.GetRowsCount() != rowsCount)
+    throw "Error: different matrix size in +";
+
+  TMatrix<T> temp(columnsCount, rowsCount, 0);
+
+  for (int i = 0; i < columnsCount; i++)
+    temp[i] = this->GetVector(i) + m.GetVector(i);
+  return temp;
+}
+
+template <class T>
+TMatrix<T> TMatrix<T>::operator-(const TMatrix<T>& m)
+{
+  if (m.GetColumnsCount() != columnsCount || m.GetRowsCount() != rowsCount)
+    throw "Error: different matrix size in +";
+
+  TMatrix<T> temp(columnsCount, rowsCount, 0);
+
+  for (int i = 0; i < columnsCount; i++)
+    temp[i] = this->GetVector(i) - m.GetVector();
+  return temp;
+}
+
+template <class T>
+TMatrix<T> TMatrix<T>::operator*(const T a)
+{
+  TMatrix<T> temp = this;
+
+  for (int i = 0; i < columnsCount; i++)
+    temp[i] = temp[i] * a;
+  return temp;
+}
+
+template <class T>
+TMatrix<T> TMatrix<T>::operator*(const TMatrix<T>& m)
+{
+  if (columnsCount != m.GetRowsCount())
+    throw "Error: cannot multiply matrix (invalid size)";
+
+  TMatrix<T> temp(m.GetColumnsCount(), rowsCount, 0);
+
+  for (int k = 0; k < rowsCount; k++)
+  {
+    for (int j = 0; j < m.GetColumnsCount(); j++)
+    {
+      for (int i = 0; i < columnsCount; i++)
+        temp[j][k] += this->GetElem(k, i) * m.GetElem(i, j);
+    }
+  }
+  return temp;
+}
+
+template <class T>
+TVector<T> TMatrix<T>::operator*(const TVector<T>& v)
+{
+  if (v.GetLen() != columnsCount)
+    throw "Error: cannot muiltiply matrix*vector (invalid size)";
+
+  TVector<T> temp(rowsCount);
+  for (int i = 0; i < rowsCount; i++)
+  {
+    for (int j = 0; j < v.GetLen(); j++)
+      temp[i] += this->GetElem(i, j) * v.GetCoord(j);
+  }
+  return temp;
+}
 
 template <class T>
 int TMatrix<T>::GetRowsCount() const
@@ -250,118 +362,4 @@ void TMatrix<T>::Transp()
   for (int i = 0; i < columnsCount; i++)
     columns[i] = temp[i];
   return;
-}
-
-template <class T>
-bool TMatrix<T>::operator==(const TMatrix<T>& m)
-{
-  if (columnsCount == m.GetColumnsCount() && rowsCount == m.GetRowsCount())
-  {
-    for (int i = 0; i < columnsCount; i++)
-    {
-      if (columns[i] != m.GetVector(i))
-        return false;
-    }
-    return true;
-  }
-  return false;
-}
-
-template <class T>
-TMatrix<T>& TMatrix<T>::operator=(const TMatrix<T>& m)
-{
-  if (m.GetColumnsCount == 0 || m.GetRowsCount() == 0)
-    throw "Error: matrix=0-matrix";
-
-  columnsCount = m.GetColumnsCount();
-  rowsCount = m.GetRowsCount();
-  if (columns != 0)
-  {
-    delete[] columns;
-    columns = 0;
-  }
-  columns = new TVector<T>[columnsCount];
-
-  for (int i = 0; i < columnsCount; i++)
-    columns[i] = m.GetVector(i);
-
-  return *this;
-}
-
-template <class T>
-TVector<T>& TMatrix<T>::operator[](const int indx)
-{
-  if (indx < 0 || indx >= columnsCount)
-    throw "Error: run out of matrix range";
-  return columns[indx];
-}
-
-template <class T>
-TMatrix<T> TMatrix<T>::operator+(const TMatrix<T>& m)
-{
-  if (m.GetColumnsCount() != columnsCount || m.GetRowsCount() != rowsCount)
-    throw "Error: different matrix size in +";
-
-  TMatrix<T> temp(columnsCount, rowsCount, 0);
-
-  for (int i = 0; i < columnsCount; i++)
-    temp[i] = this->GetVector(i) + m.GetVector(i);
-  return temp;
-}
-
-template <class T>
-TMatrix<T> TMatrix<T>::operator*(const T a)
-{
-  TMatrix<T> temp = this;
-
-  for (int i = 0; i < columnsCount; i++)
-    temp[i] = temp[i] * a;
-  return temp;
-}
-
-template <class T>
-TMatrix<T> TMatrix<T>::operator-(const TMatrix<T>& m)
-{
-  if (m.GetColumnsCount() != columnsCount || m.GetRowsCount() != rowsCount)
-    throw "Error: different matrix size in +";
-
-  TMatrix<T> temp(columnsCount, rowsCount, 0);
-
-  for (int i = 0; i < columnsCount; i++)
-    temp[i] = this->GetVector(i) - m.GetVector();
-  return temp;
-}
-
-template <class T>
-TMatrix<T> TMatrix<T>::operator*(const TMatrix<T>& m)
-{
-  if (columnsCount != m.GetRowsCount())
-    throw "Error: cannot multiply matrix (invalid size)";
-
-  TMatrix<T> temp(m.GetColumnsCount(), rowsCount, 0);
-
-  for (int k = 0; k < rowsCount; k++)
-  {
-    for (int j = 0; j < m.GetColumnsCount(); j++)
-    {
-      for (int i = 0; i < columnsCount; i++)
-        temp[j][k] += this->GetElem(k, i) * m.GetElem(i, j);
-    }
-  }
-  return temp;
-}
-
-template <class T>
-TVector<T> TMatrix<T>::operator*(const TVector<T>& v)
-{
-  if (v.GetLen() != columnsCount)
-    throw "Error: cannot muiltiply matrix*vector (invalid size)";
-
-  TVector<T> temp(rowsCount);
-  for (int i = 0; i < rowsCount; i++)
-  {
-    for (int j = 0; j < v.GetLen(); j++)
-      temp[i] += this->GetElem(i, j) * v.GetCoord(j);
-  }
-  return temp;
 }
